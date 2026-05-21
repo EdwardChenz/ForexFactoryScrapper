@@ -39,9 +39,18 @@ def parse_sitemap_index(xml_text):
     """Return list of child sitemap URLs found in sitemap-index XML text."""
     root = ET.fromstring(xml_text)
     urls = []
-    # Expect structure: <sitemapindex><sitemap><loc>...</loc></sitemap>...</sitemapindex>
-    for sitemap in root.findall(".//sitemap"):
-        loc = sitemap.find("loc")
+    # Handle namespace if present (xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+    namespace = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    # Try with namespace first, fallback to no namespace
+    sitemaps = root.findall(".//ns:sitemap", namespace)
+    if not sitemaps:
+        sitemaps = root.findall(".//sitemap")
+
+    for sitemap_el in sitemaps:
+        # Try with namespace, fallback without
+        loc = sitemap_el.find("ns:loc", namespace)
+        if loc is None:
+            loc = sitemap_el.find("loc")
         if loc is not None and loc.text:
             urls.append(loc.text.strip())
     return urls
@@ -51,9 +60,23 @@ def parse_child_sitemap(xml_text):
     """Return list of dicts: {"url": str, "lastmod": date_or_None} from child sitemap XML."""
     root = ET.fromstring(xml_text)
     results = []
-    for url_el in root.findall(".//url"):
-        loc = url_el.find("loc")
-        lastmod_el = url_el.find("lastmod")
+    # Handle namespace if present
+    namespace = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    # Try with namespace first, fallback to no namespace
+    urls = root.findall(".//ns:url", namespace)
+    if not urls:
+        urls = root.findall(".//url")
+
+    for url_el in urls:
+        # Try with namespace, fallback without
+        loc = url_el.find("ns:loc", namespace)
+        if loc is None:
+            loc = url_el.find("loc")
+
+        lastmod_el = url_el.find("ns:lastmod", namespace)
+        if lastmod_el is None:
+            lastmod_el = url_el.find("lastmod")
+
         lastmod = (
             _safe_parse_date(lastmod_el.text.strip())
             if lastmod_el is not None and lastmod_el.text

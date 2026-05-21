@@ -49,17 +49,27 @@ Open raw OpenAPI JSON: `http://localhost:5000/openapi.json`
 - GET `/api/hello` — simple hello response
 - GET `/api/health` — quick health check
 - GET `/api/forex/daily` — ForexFactory daily events (query params: `day`, `month`, `year`, optional `limit`, `offset`)
- - GET `/api/forex/daily` — ForexFactory daily events (query params: `day`, `month`, `year`, optional `limit`, `offset`)
- - GET `/api/forex/sitemaps` — ForexFactory sitemap URLs (optional `start_date`, `end_date`, `limit`, `offset`, `max_pages`)
+- GET `/api/forex/sitemaps` — ForexFactory sitemap URLs (optional `start_date`, `end_date`, `limit`, `offset`, `max_pages`)
 - GET `/api/cryptocraft/daily` — CryptoCraft daily events (same parameters)
 - GET `/api/energyexch/daily` — EnergyExch daily events (same parameters)
 - GET `/api/metalsmine/daily` — MetalsMine daily events (same parameters)
+
+### Daily events endpoints (`/api/.../daily`)
 
 All `/.../daily` endpoints follow the same validation and paging semantics:
 - Required query parameters: `day`, `month`, `year` (integers)
 - Optional `limit` and `offset` (integers, >= 0)
 - On success, list results are wrapped in a pagination object: `{ total, offset, limit, results }`.
 - On parameter validation error, endpoints return HTTP 400 with JSON: `{ "error": "..." }`.
+
+### Sitemap endpoint (`/api/forex/sitemaps`)
+
+Fetches ForexFactory sitemap-index and child sitemaps to retrieve a paginated list of URLs:
+- Optional `start_date` and `end_date` (ISO format: `YYYY-MM-DD`) — filters results by sitemap lastmod date
+- Optional `limit` and `offset` (integers, >= 0) — standard paging
+- Optional `max_pages` (integer, >= 1, default 10) — limits number of child sitemaps to scan
+- Returns: `{ total, offset, limit, results }` where each result is `{ url, lastmod: date_or_null }`
+- Example: `GET /api/forex/sitemaps?start_date=2026-05-15&max_pages=5`
 
 ---
 
