@@ -99,3 +99,45 @@ def _validate_paging_params(limit_param, offset_param):
             return None, None, "Parameter 'offset' must be >= 0"
 
     return limit, offset, None
+
+
+def _validate_date_range_params(start_date_str, end_date_str):
+    """Validate optional ISO start_date and end_date strings.
+
+    Returns tuple: (error_or_None, start_date_or_None, end_date_or_None)
+    Dates are returned as datetime.date objects.
+    """
+    if not start_date_str and not end_date_str:
+        return None, None, None
+
+    from datetime import date
+
+    def _parse(s):
+        try:
+            # Accept YYYY-MM-DD or full ISO datetime
+            from datetime import datetime
+
+            try:
+                return datetime.fromisoformat(s).date()
+            except Exception:
+                return date.fromisoformat(s[:10])
+        except Exception:
+            return None
+
+    start_date = None
+    end_date = None
+
+    if start_date_str:
+        start_date = _parse(start_date_str)
+        if start_date is None:
+            return "Parameter 'start_date' must be ISO format YYYY-MM-DD", None, None
+
+    if end_date_str:
+        end_date = _parse(end_date_str)
+        if end_date is None:
+            return "Parameter 'end_date' must be ISO format YYYY-MM-DD", None, None
+
+    if start_date and end_date and start_date > end_date:
+        return "Parameter 'start_date' must be <= 'end_date'", None, None
+
+    return None, start_date, end_date

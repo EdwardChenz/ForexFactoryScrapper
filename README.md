@@ -49,6 +49,8 @@ Open raw OpenAPI JSON: `http://localhost:5000/openapi.json`
 - GET `/api/hello` — simple hello response
 - GET `/api/health` — quick health check
 - GET `/api/forex/daily` — ForexFactory daily events (query params: `day`, `month`, `year`, optional `limit`, `offset`)
+ - GET `/api/forex/daily` — ForexFactory daily events (query params: `day`, `month`, `year`, optional `limit`, `offset`)
+ - GET `/api/forex/sitemaps` — ForexFactory sitemap URLs (optional `start_date`, `end_date`, `limit`, `offset`, `max_pages`)
 - GET `/api/cryptocraft/daily` — CryptoCraft daily events (same parameters)
 - GET `/api/energyexch/daily` — EnergyExch daily events (same parameters)
 - GET `/api/metalsmine/daily` — MetalsMine daily events (same parameters)

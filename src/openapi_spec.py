@@ -102,6 +102,69 @@ OPENAPI_SPEC = {
                 },
             }
         },
+        "/api/forex/sitemaps": {
+            "get": {
+                "summary": "Get ForexFactory sitemap URLs (paginated)",
+                "tags": ["forex"],
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "string", "format": "date"},
+                        "description": "Start date (inclusive) in YYYY-MM-DD",
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "string", "format": "date"},
+                        "description": "End date (inclusive) in YYYY-MM-DD",
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "integer", "minimum": 0},
+                        "description": "Max number of results to return",
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "integer", "minimum": 0},
+                        "description": "Number of records to skip",
+                    },
+                    {
+                        "name": "max_pages",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "integer", "minimum": 1},
+                        "description": "Maximum number of child sitemaps to scan",
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A pagination wrapper with sitemap urls",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedRecords"
+                                }
+                            }
+                        },
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid params",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                            }
+                        },
+                    },
+                },
+            }
+        },
         "/api/cryptocraft/daily": {
             "get": {
                 "summary": "Get cryptocraft events for a day",
