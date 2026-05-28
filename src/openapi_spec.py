@@ -367,28 +367,38 @@ OPENAPI_SPEC = {
                         "name": "sources",
                         "in": "query",
                         "required": False,
-                        "schema": {"type": "string"},
+                        "schema": {
+                            "type": "string",
+                            "default": "forex",
+                            "example": "forex,crypto,metal",
+                        },
                         "description": (
                             "Comma-separated list of sources: 'forex', 'crypto', 'metal', 'energy'. "
                             "Default is 'forex'"
                         ),
-                        "examples": {
-                            "forex_only": "forex",
-                            "multiple": "forex,crypto,metal",
-                        },
                     },
                     {
                         "name": "start_date",
                         "in": "query",
                         "required": True,
-                        "schema": {"type": "string", "format": "date"},
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "default": "2020-01-01",
+                            "example": "2020-01-01",
+                        },
                         "description": "Start date in ISO format (YYYY-MM-DD)",
                     },
                     {
                         "name": "end_date",
                         "in": "query",
                         "required": True,
-                        "schema": {"type": "string", "format": "date"},
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "default": "2020-01-02",
+                            "example": "2020-01-02",
+                        },
                         "description": "End date in ISO format (YYYY-MM-DD)",
                     },
                     {
