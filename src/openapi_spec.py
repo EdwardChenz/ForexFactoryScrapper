@@ -16,6 +16,10 @@ OPENAPI_SPEC = {
         {"name": "cryptocraft", "description": "CryptoCraft scraping endpoints"},
         {"name": "metals", "description": "MetalsMine scraping endpoints"},
         {"name": "energy", "description": "EnergyExch scraping endpoints"},
+        {
+            "name": "bundle",
+            "description": "Multi-source bundled economic events endpoints",
+        },
     ],
     "paths": {
         "/": {
@@ -354,6 +358,84 @@ OPENAPI_SPEC = {
                 },
             }
         },
+        "/api/bundle": {
+            "get": {
+                "summary": "Get combined economic events from multiple sources within a date range",
+                "tags": ["bundle"],
+                "parameters": [
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "string"},
+                        "description": (
+                            "Comma-separated list of sources: 'forex', 'crypto', 'metal', 'energy'. "
+                            "Default is 'forex'"
+                        ),
+                        "examples": {
+                            "forex_only": "forex",
+                            "multiple": "forex,crypto,metal",
+                        },
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "string", "format": "date"},
+                        "description": "Start date in ISO format (YYYY-MM-DD)",
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "string", "format": "date"},
+                        "description": "End date in ISO format (YYYY-MM-DD)",
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "integer", "minimum": 0},
+                        "description": "Max number of results to return",
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "integer", "minimum": 0},
+                        "description": "Number of records to skip",
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A pagination wrapper with combined events from all requested sources",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedBundleRecords"
+                                }
+                            }
+                        },
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid params",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                            }
+                        },
+                    },
+                    "500": {
+                        "description": "Internal server error during scraping",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                            }
+                        },
+                    },
+                },
+            }
+        },
     },
     "components": {
         "schemas": {
@@ -445,6 +527,58 @@ OPENAPI_SPEC = {
                     },
                 },
                 "required": ["total", "offset", "limit", "results"],
+            },
+            "PaginatedBundleRecords": {
+                "type": "object",
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "description": "Total number of combined records from all sources",
+                    },
+                    "offset": {"type": "integer", "description": "Offset applied"},
+                    "limit": {
+                        "oneOf": [{"type": "integer"}, {"type": "null"}],
+                        "description": "Limit applied (null means unlimited)",
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Start date queried",
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "End date queried",
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of sources included in the results",
+                    },
+                    "source_breakdown": {
+                        "type": "object",
+                        "description": "Count of records per source",
+                        "additionalProperties": {"type": "integer"},
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "description": "Combined event record with _source and _date fields",
+                            "additionalProperties": True,
+                        },
+                    },
+                },
+                "required": [
+                    "total",
+                    "offset",
+                    "limit",
+                    "start_date",
+                    "end_date",
+                    "sources",
+                    "source_breakdown",
+                    "results",
+                ],
             },
             "ErrorResponse": {
                 "type": "object",

@@ -53,6 +53,7 @@ Open raw OpenAPI JSON: `http://localhost:5000/openapi.json`
 - GET `/api/cryptocraft/daily` — CryptoCraft daily events (same parameters)
 - GET `/api/energyexch/daily` — EnergyExch daily events (same parameters)
 - GET `/api/metalsmine/daily` — MetalsMine daily events (same parameters)
+- GET `/api/bundle` — Combined economic events from multiple sources within a date range (see below)
 
 ### Daily events endpoints (`/api/.../daily`)
 
@@ -70,6 +71,23 @@ Fetches ForexFactory sitemap-index and child sitemaps to retrieve a paginated li
 - Optional `max_pages` (integer, >= 1, default 10) — limits number of child sitemaps to scan
 - Returns: `{ total, offset, limit, results }` where each result is `{ url, lastmod: date_or_null }`
 - Example: `GET /api/forex/sitemaps?start_date=2026-05-15&max_pages=5`
+
+### Bundle endpoint (`/api/bundle`)
+
+Fetches combined economic events from multiple sources within a date range:
+- Required query parameters:
+  - `start_date` (ISO format: `YYYY-MM-DD`) — Start date (inclusive)
+  - `end_date` (ISO format: `YYYY-MM-DD`) — End date (inclusive)
+- Optional query parameters:
+  - `sources` (comma-separated string, default: `forex`) — Sources to include: `forex`, `crypto`, `metal`, `energy`
+  - `limit` (integer, >= 0) — Max number of results to return
+  - `offset` (integer, >= 0) — Number of records to skip
+- Returns: `{ total, offset, limit, start_date, end_date, sources, source_breakdown, results }`
+  - Each result includes `_source` (which source it came from) and `_date` (which date it was fetched for)
+  - `source_breakdown` shows count of records per source
+- Examples:
+  - `GET /api/bundle?start_date=2026-05-20&end_date=2026-05-25` — forex events for May 20-25
+  - `GET /api/bundle?sources=forex,crypto&start_date=2026-05-20&end_date=2026-05-21&limit=50` — forex and crypto events, max 50 results
 
 ---
 

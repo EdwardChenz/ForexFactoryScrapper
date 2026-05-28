@@ -11,6 +11,7 @@ from .energy_exch_routes import energy_bp
 from .metals_mine_routes import metals_bp
 from .root_routes import root_bp
 from .sitemap_routes import sitemap_bp
+from .bundle_routes import bundle_bp
 
 __all__ = [
     "helper_bp",
@@ -18,6 +19,7 @@ __all__ = [
     "crypto_bp",
     "energy_bp",
     "metals_bp",
+    "bundle_bp",
     "root_bp",
     "sitemap_bp",
 ]
@@ -36,6 +38,7 @@ def register_blueprints(app, swagger_bp=None):
     app.register_blueprint(crypto_bp)
     app.register_blueprint(energy_bp)
     app.register_blueprint(metals_bp)
+    app.register_blueprint(bundle_bp)
     app.register_blueprint(sitemap_bp)
     if swagger_bp:
         app.register_blueprint(swagger_bp)
