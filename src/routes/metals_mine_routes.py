@@ -16,8 +16,8 @@ metals_bp = Blueprint("metalsmine", __name__)
 def metalsmine_daily():
     try:
         get_records, get_url = _resolve_helpers("src.scrapper.metalsMineScrapper")
-    except Exception:
-        logger.exception("Failed to resolve metalsmine scraper helpers")
+    except Exception as e:
+        logger.exception(f"Failed to resolve metalsmine scraper helpers: {e}")
         return jsonify({"error": "Server configuration error"}), 500
 
     # validate presence and parse
@@ -70,6 +70,6 @@ def metalsmine_daily():
             return jsonify(response_body), 200
         else:
             return jsonify(record_json), 200
-    except Exception:
-        logger.exception("Failed to apply paging to metalsmine records")
+    except Exception as e:
+        logger.exception(f"Failed to apply paging to metalsmine records: {e}")
         return jsonify({"error": "Failed to process records"}), 500

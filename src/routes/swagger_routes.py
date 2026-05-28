@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, jsonify, request, render_template
 from jinja2 import TemplateNotFound
 import json
@@ -5,6 +6,7 @@ import copy
 
 from ..openapi_spec import OPENAPI_SPEC
 
+logger = logging.getLogger(__name__)
 swagger_bp = Blueprint("swagger", __name__)
 
 
@@ -32,8 +34,9 @@ def swagger_ui():
         spec_for_template["servers"] = [
             {"url": request.url_root.rstrip("/"), "description": "Server (auto)"}
         ]
-    except Exception:
+    except Exception as e:
         # if request.url_root is not available, leave spec as-is
+        logger.exception(f"Failed to apply paging to records: {e}")
         pass
 
     try:
@@ -58,6 +61,7 @@ def swagger_ui():
             "</body></html>"
         )
         try:
-            return tpl % (spec_json), 200
-        except Exception:
+            return tpl % spec_json, 200
+        except Exception as e:
+            logger.exception(f"Failed to apply paging to records: {e}")
             return tpl, 200

@@ -22,7 +22,8 @@ def _resolve_helpers(site_module_path):
             get_records_fn = getattr(src_app, "get_records")
         if callable(getattr(src_app, "get_url", None)):
             get_url_fn = getattr(src_app, "get_url")
-    except Exception:
+    except Exception as e:
+        logger.info(f"Failed to resolve helper module: {e}")
         pass
 
     # 2) main module (tests sometimes monkeypatch main)
@@ -34,7 +35,8 @@ def _resolve_helpers(site_module_path):
             get_records_fn = getattr(main_mod, "get_records")
         if get_url_fn is None and callable(getattr(main_mod, "get_url", None)):
             get_url_fn = getattr(main_mod, "get_url")
-    except Exception:
+    except Exception as e:
+        logger.info(f"Failed to resolve helper module: {e}")
         pass
 
     # 3) fallback to site-specific scraper for missing functions
@@ -119,9 +121,11 @@ def _validate_date_range_params(start_date_str, end_date_str):
 
             try:
                 return datetime.fromisoformat(s).date()
-            except Exception:
+            except Exception as e:
+                logger.info(f"Failed to parse date ({s}): {e}")
                 return date.fromisoformat(s[:10])
-        except Exception:
+        except Exception as e:
+            logger.info(f"Failed to parse date (return None): {e}")
             return None
 
     start_date = None

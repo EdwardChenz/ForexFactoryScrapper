@@ -13,8 +13,8 @@ def sitemap_urls():
     try:
         # import here to avoid import-time network activity
         from src.scrapper import forexfactory_sitemap as sitemap_scraper
-    except Exception:
-        logger.exception("Failed to import sitemap scraper module")
+    except Exception as e:
+        logger.exception(f"Failed to import sitemap scraper module: {e}")
         return jsonify({"error": "Server configuration error"}), 500
 
     # validate date range params
@@ -53,8 +53,8 @@ def sitemap_urls():
             offset=offset,
             max_pages=max_pages,
         )
-    except Exception:
-        logger.exception("Failed to fetch sitemap URLs")
+    except Exception as e:
+        logger.exception(f"Failed to fetch sitemap URLs: {e}")
         return jsonify({"error": "Failed to fetch sitemap URLs"}), 500
 
     return jsonify(result), 200

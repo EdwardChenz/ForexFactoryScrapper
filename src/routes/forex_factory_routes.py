@@ -16,8 +16,8 @@ forex_bp = Blueprint("forex", __name__)
 def daily_data():
     try:
         get_records, get_url = _resolve_helpers("src.scrapper.forexFactoryScrapper")
-    except Exception:
-        logger.exception("Failed to resolve scraper helpers")
+    except Exception as e:
+        logger.exception(f"Failed to resolve scraper helpers: {e}")
         return jsonify({"error": "Server configuration error"}), 500
 
     # validate presence and parse
@@ -74,6 +74,6 @@ def daily_data():
             return jsonify(response_body), 200
         else:
             return jsonify(record_json), 200
-    except Exception:
-        logger.exception("Failed to apply paging to records")
+    except Exception as e:
+        logger.exception(f"Failed to apply paging to records: {e}")
         return jsonify({"error": "Failed to process records"}), 500

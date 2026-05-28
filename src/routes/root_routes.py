@@ -11,7 +11,7 @@ def welcome():
     """Render a simple welcome page with quick links to the API."""
     try:
         return render_template("welcome.html"), 200
-    except Exception:
-        logger.exception("Failed to render welcome template")
+    except Exception as e:
+        logger.exception(f"Failed to render welcome template: {e}")
         # Fallback: return plain text
-        return ("<html><body><h1>Welcome</h1></body></html>"), 200
+        return "<html><body><h1>Welcome</h1></body></html>", 200

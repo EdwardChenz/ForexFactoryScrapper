@@ -16,8 +16,8 @@ energy_bp = Blueprint("energyexch", __name__)
 def energyexch_daily():
     try:
         get_records, get_url = _resolve_helpers("src.scrapper.energyExchScrapper")
-    except Exception:
-        logger.exception("Failed to resolve energyexch helpers")
+    except Exception as e:
+        logger.exception(f"Failed to resolve energyexch helpers: {e}")
         return jsonify({"error": "Server configuration error"}), 500
 
     # validate presence and parse
@@ -70,6 +70,6 @@ def energyexch_daily():
             return jsonify(response_body), 200
         else:
             return jsonify(record_json), 200
-    except Exception:
-        logger.exception("Failed to apply paging to energyexch records")
+    except Exception as e:
+        logger.exception(f"Failed to apply paging to energyexch records: {e}")
         return jsonify({"error": "Failed to process records"}), 500

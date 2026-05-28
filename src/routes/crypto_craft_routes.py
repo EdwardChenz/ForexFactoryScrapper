@@ -16,8 +16,8 @@ crypto_bp = Blueprint("cryptocraft", __name__)
 def cryptocraft_daily():
     try:
         get_records, get_url = _resolve_helpers("src.scrapper.cryptoCraftScrapper")
-    except Exception:
-        logger.exception("Failed to resolve cryptocraft helpers")
+    except Exception as e:
+        logger.exception(f"Failed to resolve cryptocraft helpers: {e}")
         return jsonify({"error": "Server configuration error"}), 500
 
     # validate presence and parse
@@ -40,8 +40,8 @@ def cryptocraft_daily():
     try:
         url = get_url(day_i, month_i, year_i, "day")
         record_json = get_records(url)
-    except Exception:
-        logger.exception("Failed to fetch or parse cryptocraft records")
+    except Exception as e:
+        logger.exception(f"Failed to fetch or parse cryptocraft records: {e}")
         raise
 
     # Normalize cryptocraft records to requested shape: Impact, Event, Actual, Forecast, Previous, Time
@@ -92,6 +92,6 @@ def cryptocraft_daily():
             return jsonify(response_body), 200
         else:
             return jsonify(record_json), 200
-    except Exception:
-        logger.exception("Failed to apply paging to records")
+    except Exception as e:
+        logger.exception(f"Failed to apply paging to records: {e}")
         return jsonify({"error": "Failed to process records"}), 500
