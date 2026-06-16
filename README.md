@@ -2,11 +2,18 @@
 
 [![CI](https://github.com/AtaCanYmc/ForexFactoryScrapper/actions/workflows/ci.yml/badge.svg)](https://github.com/AtaCanYmc/ForexFactoryScrapper/actions) [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/AtaCanYmc/ForexFactoryScrapper/blob/main/LICENSE)
 
-ForexFactoryScrapper is a small Flask-based API that exposes scraping logic for several economic-calendar sources (ForexFactory, CryptoCraft, EnergyExch, MetalsMine).
+ForexFactoryScrapper is a small Flask-based HTTP API that exposes economic-calendar data (ForexFactory, CryptoCraft, EnergyExch, MetalsMine).
+
+> **Important Architecture Note:**
+> All web scraping logic has been decoupled and is now centrally managed by the [forex-pytory](https://github.com/AtaCanYmc/forex-pytory) package. This API project delegates data fetching entirely to that library and focuses solely on providing a clean, user-friendly REST API interface.
+
+### Why this architecture?
+- **Modularity:** The scraping engine and the web server (API) are independent.
+- **Maintainability:** Any HTML DOM changes on target sites only require updates in `forex-pytory`, leaving the API project untouched.
+- **Single Source of Truth:** Data typing and validation is handled strictly via Pydantic models at the library level.
 
 What this repository provides:
 - Flask HTTP API endpoints returning JSON (or HTML for the root page)
-- Per-site scrapers under `src/scrapper/` (site-specific logic)
 - Simple test-suite using `pytest` under `tests/`
 - A minimal OpenAPI spec (served at `/openapi.json`) and a Swagger UI at `/swagger`
 
@@ -24,6 +31,7 @@ source .venv/bin/activate
 2. Install dependencies:
 
 ```bash
+# Note: This will automatically install the scraping engine 'forex-pytory'
 pip install -r requirements.txt
 ```
 
