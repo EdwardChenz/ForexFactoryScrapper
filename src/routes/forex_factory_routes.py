@@ -1,8 +1,9 @@
 import logging
 from flask import Blueprint, jsonify, request
 
+from forex_pytory.core.scraper import forex_factory_scraper
+
 from .common_helpers import (
-    _resolve_helpers,
     _validate_date_params,
     _validate_paging_params,
 )
@@ -14,12 +15,6 @@ forex_bp = Blueprint("forex", __name__)
 
 @forex_bp.route("/api/forex/daily", methods=["GET"])
 def daily_data():
-    try:
-        get_records, get_url = _resolve_helpers("src.scrapper.forexFactoryScrapper")
-    except Exception as e:
-        logger.exception(f"Failed to resolve scraper helpers: {e}")
-        return jsonify({"error": "Server configuration error"}), 500
-
     # validate presence and parse
     day = request.args.get("day")
     month = request.args.get("month")
@@ -29,7 +24,7 @@ def daily_data():
     if date_err:
         return jsonify({"error": date_err}), 400
 
-    # Optional paging parameters: limit and offset
+    # Optional paging parameters
     limit_param = request.args.get("limit")
     offset_param = request.args.get("offset")
 
@@ -38,42 +33,42 @@ def daily_data():
         return jsonify({"error": paging_err}), 400
 
     try:
-        url = get_url(day_i, month_i, year_i, "day")
-        record_json = get_records(url)
-    except Exception:
-        logger.exception("Failed to fetch or parse records")
-        raise
-
-    # If records is a list apply paging (offset/limit); otherwise return as-is
-    try:
-        if isinstance(record_json, list):
-            total = len(record_json)
-
-            # apply offset
-            if offset and offset > 0:
-                if offset >= total:
-                    paged = []
-                else:
-                    paged = record_json[offset:]
-            else:
-                paged = record_json[:]
-
-            # apply limit
-            if limit is not None:
-                paged = paged[:limit]
-
-            # Wrap results with pagination metadata
-            response_body = {
-                "total": total,
-                "offset": offset,
-                "limit": limit,
-                "url": url,
-                "results": paged,
-            }
-
-            return jsonify(response_body), 200
-        else:
-            return jsonify(record_json), 200
+        url = forex_factory_scraper.get_url(
+            day=day_i, month=month_i, year=year_i, timeline="day"
+        )
+        records = forex_factory_scraper.get_records(url)
     except Exception as e:
-        logger.exception(f"Failed to apply paging to records: {e}")
+        logger.exception(f"Failed to fetch or parse forexfactory records: {e}")
+        return jsonify({"error": "Failed to fetch data"}), 500
+
+    try:
+        # Convert Pydantic models to dicts
+        record_json = [r.model_dump(by_alias=True) for r in records]
+
+        total = len(record_json)
+
+        # apply offset
+        if offset and offset > 0:
+            if offset >= total:
+                paged = []
+            else:
+                paged = record_json[offset:]
+        else:
+            paged = record_json[:]
+
+        # apply limit
+        if limit is not None:
+            paged = paged[:limit]
+
+        # Wrap results with pagination metadata
+        response_body = {
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "results": paged,
+        }
+
+        return jsonify(response_body), 200
+    except Exception as e:
+        logger.exception(f"Failed to process records: {e}")
         return jsonify({"error": "Failed to process records"}), 500

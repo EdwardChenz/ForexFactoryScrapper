@@ -1,8 +1,14 @@
 from flask import Blueprint, request, jsonify
 import logging
 
+from forex_pytory.core.scraper import (
+    forex_factory_scraper,
+    crypto_craft_scraper,
+    metals_mine_scraper,
+    energy_exch_scraper,
+)
+
 from .common_helpers import (
-    _resolve_helpers,
     _validate_date_range_params,
     _validate_paging_params,
 )
@@ -14,19 +20,7 @@ bundle_bp = Blueprint("bundle", __name__)
 
 @bundle_bp.route("/api/bundle", methods=["GET"])
 def get_economic_events_bundle():
-    """Endpoint to scrape economic events from multiple sources within a date range.
-
-    Query Parameters:
-    - sources: (optional) Comma-separated list of sources. Default is 'forex'.
-               Supported values: 'forex', 'crypto', 'metal', 'energy'
-    - start_date: (required) Start date in ISO format (YYYY-MM-DD)
-    - end_date: (required) End date in ISO format (YYYY-MM-DD)
-    - limit: (optional) Maximum number of events to return per source
-    - offset: (optional) Number of records to skip (applied per source)
-
-    Response:
-    A JSON object with combined events from all requested sources, with pagination info.
-    """
+    """Endpoint to scrape economic events from multiple sources within a date range."""
     # 1. Parse and validate query parameters
     supported_sources = {"forex", "crypto", "metal", "energy"}
     sources_raw = request.args.getlist("sources")
@@ -98,26 +92,22 @@ def get_economic_events_bundle():
         all_combined_events = []
         source_results = {}
 
+        source_map = {
+            "forex": forex_factory_scraper,
+            "crypto": crypto_craft_scraper,
+            "metal": metals_mine_scraper,
+            "energy": energy_exch_scraper,
+        }
+
         for source in sources:
             try:
-                source_events = []
+                scraper_module = source_map.get(source)
+                if not scraper_module:
+                    continue
 
-                if source == "forex":
-                    source_events = _fetch_from_date_range(
-                        "src.scrapper.forexFactoryScrapper", start_date, end_date
-                    )
-                elif source == "crypto":
-                    source_events = _fetch_from_date_range(
-                        "src.scrapper.cryptoCraftScrapper", start_date, end_date
-                    )
-                elif source == "metal":
-                    source_events = _fetch_from_date_range(
-                        "src.scrapper.metalsMineScrapper", start_date, end_date
-                    )
-                elif source == "energy":
-                    source_events = _fetch_from_date_range(
-                        "src.scrapper.energyExchScrapper", start_date, end_date
-                    )
+                source_events = _fetch_from_date_range(
+                    scraper_module, start_date, end_date
+                )
 
                 # Add source tag to each event for tracking
                 for event in source_events:
@@ -178,29 +168,17 @@ def get_economic_events_bundle():
         )
 
 
-def _fetch_from_date_range(scraper_module_path, start_date, end_date):
+def _fetch_from_date_range(scraper_module, start_date, end_date):
     """Fetch records from a scraper for each day in the date range.
 
     Args:
-        scraper_module_path: Path to scraper module (e.g., 'src.scrapper.forexFactoryScrapper')
+        scraper_module: The scraper module from forex_pytory (e.g., forex_factory_scraper)
         start_date: datetime.date object for start
         end_date: datetime.date object for end
 
     Returns:
         List of records from all days in the range
     """
-    try:
-        get_records, get_url = _resolve_helpers(scraper_module_path)
-    except Exception as e:
-        logger.error(
-            f"Failed to resolve scraper helpers for {scraper_module_path}: {e}"
-        )
-        return []
-
-    if not get_records or not get_url:
-        logger.error(f"Scraper helpers not available for {scraper_module_path}")
-        return []
-
     from datetime import timedelta
 
     all_records = []
@@ -212,8 +190,11 @@ def _fetch_from_date_range(scraper_module_path, start_date, end_date):
             month = current_date.month
             year = current_date.year
 
-            url = get_url(day, month, year, "day")
-            record_json = get_records(url)
+            url = scraper_module.get_url(day, month, year, "day")
+            records = scraper_module.get_records(url)
+
+            # Convert to dicts
+            record_json = [r.model_dump(by_alias=True) for r in records]
 
             if isinstance(record_json, list):
                 # Add date info to each record
@@ -224,7 +205,7 @@ def _fetch_from_date_range(scraper_module_path, start_date, end_date):
 
         except Exception as e:
             logger.warning(
-                f"Failed to fetch data for {current_date} from {scraper_module_path}: {e}"
+                f"Failed to fetch data for {current_date} from {scraper_module.__name__}: {e}"
             )
 
         current_date += timedelta(days=1)

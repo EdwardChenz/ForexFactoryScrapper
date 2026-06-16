@@ -12,7 +12,7 @@ sitemap_bp = Blueprint("sitemap", __name__)
 def sitemap_urls():
     try:
         # import here to avoid import-time network activity
-        from src.scrapper import forexfactory_sitemap as sitemap_scraper
+        from forex_pytory.core.scraper import forexfactory_sitemap as sitemap_scraper
     except Exception as e:
         logger.exception(f"Failed to import sitemap scraper module: {e}")
         return jsonify({"error": "Server configuration error"}), 500

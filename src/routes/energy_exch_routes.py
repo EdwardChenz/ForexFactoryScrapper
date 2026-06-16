@@ -1,8 +1,9 @@
 import logging
 from flask import Blueprint, jsonify, request
 
+from forex_pytory.core.scraper import energy_exch_scraper
+
 from .common_helpers import (
-    _resolve_helpers,
     _validate_date_params,
     _validate_paging_params,
 )
@@ -14,12 +15,6 @@ energy_bp = Blueprint("energyexch", __name__)
 
 @energy_bp.route("/api/energyexch/daily", methods=["GET"])
 def energyexch_daily():
-    try:
-        get_records, get_url = _resolve_helpers("src.scrapper.energyExchScrapper")
-    except Exception as e:
-        logger.exception(f"Failed to resolve energyexch helpers: {e}")
-        return jsonify({"error": "Server configuration error"}), 500
-
     # validate presence and parse
     day = request.args.get("day")
     month = request.args.get("month")
@@ -38,38 +33,42 @@ def energyexch_daily():
         return jsonify({"error": paging_err}), 400
 
     try:
-        url = get_url(day_i, month_i, year_i, "day")
-        record_json = get_records(url)
-    except Exception:
-        logger.exception("Failed to fetch or parse energyexch records")
-        raise
-
-    # Apply paging if list
-    try:
-        if isinstance(record_json, list):
-            total = len(record_json)
-
-            if offset and offset > 0:
-                if offset >= total:
-                    paged = []
-                else:
-                    paged = record_json[offset:]
-            else:
-                paged = record_json[:]
-
-            if limit is not None:
-                paged = paged[:limit]
-
-            response_body = {
-                "total": total,
-                "offset": offset,
-                "limit": limit,
-                "results": paged,
-            }
-
-            return jsonify(response_body), 200
-        else:
-            return jsonify(record_json), 200
+        url = energy_exch_scraper.get_url(
+            day=day_i, month=month_i, year=year_i, timeline="day"
+        )
+        records = energy_exch_scraper.get_records(url)
     except Exception as e:
-        logger.exception(f"Failed to apply paging to energyexch records: {e}")
+        logger.exception(f"Failed to fetch or parse energy records: {e}")
+        return jsonify({"error": "Failed to fetch data"}), 500
+
+    try:
+        # Convert Pydantic models to dicts
+        record_json = [r.model_dump(by_alias=True) for r in records]
+
+        total = len(record_json)
+
+        # apply offset
+        if offset and offset > 0:
+            if offset >= total:
+                paged = []
+            else:
+                paged = record_json[offset:]
+        else:
+            paged = record_json[:]
+
+        # apply limit
+        if limit is not None:
+            paged = paged[:limit]
+
+        # Wrap results with pagination metadata
+        response_body = {
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "results": paged,
+        }
+
+        return jsonify(response_body), 200
+    except Exception as e:
+        logger.exception(f"Failed to process records: {e}")
         return jsonify({"error": "Failed to process records"}), 500

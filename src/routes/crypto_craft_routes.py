@@ -1,8 +1,9 @@
 import logging
 from flask import Blueprint, jsonify, request
 
+from forex_pytory.core.scraper import crypto_craft_scraper
+
 from .common_helpers import (
-    _resolve_helpers,
     _validate_date_params,
     _validate_paging_params,
 )
@@ -14,12 +15,6 @@ crypto_bp = Blueprint("cryptocraft", __name__)
 
 @crypto_bp.route("/api/cryptocraft/daily", methods=["GET"])
 def cryptocraft_daily():
-    try:
-        get_records, get_url = _resolve_helpers("src.scrapper.cryptoCraftScrapper")
-    except Exception as e:
-        logger.exception(f"Failed to resolve cryptocraft helpers: {e}")
-        return jsonify({"error": "Server configuration error"}), 500
-
     # validate presence and parse
     day = request.args.get("day")
     month = request.args.get("month")
@@ -38,60 +33,42 @@ def cryptocraft_daily():
         return jsonify({"error": paging_err}), 400
 
     try:
-        url = get_url(day_i, month_i, year_i, "day")
-        record_json = get_records(url)
+        url = crypto_craft_scraper.get_url(
+            day=day_i, month=month_i, year=year_i, timeline="day"
+        )
+        records = crypto_craft_scraper.get_records(url)
     except Exception as e:
         logger.exception(f"Failed to fetch or parse cryptocraft records: {e}")
-        raise
+        return jsonify({"error": "Failed to fetch data"}), 500
 
-    # Normalize cryptocraft records to requested shape: Impact, Event, Actual, Forecast, Previous, Time
     try:
-        if isinstance(record_json, list):
-            normalized = []
-            for r in record_json:
-                impact = (
-                    r.get("Impact") if isinstance(r, dict) and "Impact" in r else None
-                )
-                normalized.append(
-                    {
-                        "Impact": impact if impact is not None else "",
-                        "Event": r.get("Event") if isinstance(r, dict) else None,
-                        "Actual": r.get("Actual") if isinstance(r, dict) else None,
-                        "Forecast": r.get("Forecast") if isinstance(r, dict) else None,
-                        "Previous": r.get("Previous") if isinstance(r, dict) else None,
-                        "Time": r.get("Time") if isinstance(r, dict) else None,
-                    }
-                )
-            record_json = normalized
+        # Convert Pydantic models to dicts
+        record_json = [r.model_dump(by_alias=True) for r in records]
 
-        # If records is a list apply paging (offset/limit); otherwise return as-is
-        if isinstance(record_json, list):
-            total = len(record_json)
+        total = len(record_json)
 
-            # apply offset
-            if offset and offset > 0:
-                if offset >= total:
-                    paged = []
-                else:
-                    paged = record_json[offset:]
+        # apply offset
+        if offset and offset > 0:
+            if offset >= total:
+                paged = []
             else:
-                paged = record_json[:]
-
-            # apply limit
-            if limit is not None:
-                paged = paged[:limit]
-
-            # Wrap results with pagination metadata
-            response_body = {
-                "total": total,
-                "offset": offset,
-                "limit": limit,
-                "results": paged,
-            }
-
-            return jsonify(response_body), 200
+                paged = record_json[offset:]
         else:
-            return jsonify(record_json), 200
+            paged = record_json[:]
+
+        # apply limit
+        if limit is not None:
+            paged = paged[:limit]
+
+        # Wrap results with pagination metadata
+        response_body = {
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "results": paged,
+        }
+
+        return jsonify(response_body), 200
     except Exception as e:
-        logger.exception(f"Failed to apply paging to records: {e}")
+        logger.exception(f"Failed to process records: {e}")
         return jsonify({"error": "Failed to process records"}), 500
