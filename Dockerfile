@@ -19,9 +19,10 @@ COPY src/ ./src/
 RUN useradd --create-home --shell /bin/bash appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Zeabur will set PORT env var dynamically, default to 5000 as fallback
-ENV PORT=5000
+# Hugging Face Spaces sets PORT env var to 7860 automatically
+# We set a default here as fallback
+ENV PORT=7860
 
-EXPOSE 5000
+EXPOSE 7860
 
 CMD ["python", "main.py"]
